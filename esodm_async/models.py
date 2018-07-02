@@ -1,0 +1,2 @@
+class ESBaseModel(object):
+    pass
