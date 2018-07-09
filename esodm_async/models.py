@@ -31,7 +31,6 @@ class ESBaseModel(type):
                 not doc_type
                 or (doc_type != cls.__name__ and not getattr(cls.Meta, 'doc_type', None))
         ) and cls.__name__ != 'ESModel':
-            print(cls.__name__)
             setattr(meta_class, 'doc_type', cls.__name__)
 
         # Set new Meta class (Options) to _meta attr in model

@@ -32,11 +32,6 @@ class TestingOptions(object):
     async def test_getting_all_field_of_model(self):
         obj = TestFieldModel()
 
-        print("#" * 20)
-        print("Model name: %s" % TestFieldModel.__name__)
-        print("Model in meta: %s" % TestFieldModel._meta.model_cls.__name__)
-        print("*" * 20)
-
         fields_list = {f[0]: f[1] for f in inspect.getmembers(obj.__class__)
                        if getattr(f[1], 'is_field', False)}
         assert obj._meta.get_fields(include_hidden=True) == fields_list
