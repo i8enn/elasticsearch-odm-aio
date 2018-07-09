@@ -29,8 +29,10 @@ class ESBaseQuerySet(abc.AsyncIterator):
     def __setitem__(self, key, value):
         raise TypeError("%s is immutable object" % self.__class__.__name__)
 
-    def append(self, item):
-        raise TypeError("%s is immutable object" % self.__class__.__name__)
+    def __str__(self):
+        if len(self.data) > 20:
+            return "<QuerySet: %s... and more %s elements" % (self.data, len(self.data))
+        return "<QuerySet: %s>" % self.data
 
     @property
     def data(self):
@@ -39,3 +41,7 @@ class ESBaseQuerySet(abc.AsyncIterator):
     @data.setter
     def data(self, value):
         raise TypeError("%s is immutable object" % self.__class__.__name__)
+
+
+class ESQuerySet(ESBaseQuerySet):
+    pass

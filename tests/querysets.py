@@ -20,7 +20,8 @@ class TestingESBaseQueryset(object):
     async def test_immutable_data(self):
         qs = ESBaseQuerySet([1, 2, 3])
         with pytest.raises(TypeError, match="ESBaseQuerySet is immutable object"):
-            qs.append(4)
-
-        with pytest.raises(TypeError, match="ESBaseQuerySet is immutable object"):
             qs[3] = 4
+
+    async def test_negative_index(self):
+        qs = ESBaseQuerySet([1, 2, 3])
+        assert qs[-1] == qs[2]
