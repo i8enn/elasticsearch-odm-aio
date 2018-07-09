@@ -1,7 +1,6 @@
 class ESBaseField(object):
 
     _value = None
-    _model_instance = None
     _model_attr = None
 
     def __init__(self, *args, **kwargs):
@@ -25,17 +24,8 @@ class ESBaseField(object):
 
     @value.setter
     def value(self, value):
-        self._value = None
+        self._value = value
 
     @property
     def is_field(self):
         return True
-
-    @property
-    def model_instance(self):
-        return self._model_instance
-
-    @model_instance.setter
-    def model_instance(self, value):
-        self._model_instance = value
-        self._value = None

@@ -1,26 +1,22 @@
 import builtins
 import inspect
 
-from .models import ESBaseModel
-
 
 class ESOptions(object):
+    """This class using for template Meta class in model"""
     index = None
     doc_type = None
-    model = None
+    model_cls = None
 
-    _fields = {}
+    # Not overrides attributes in ESBaseModel.__init__ metaclass
+    protected_attrs = ('model_cls',)
 
-    def __init__(self, model, *args, **kwargs):
-        super(ESOptions, self).__init__()
+    def __init__(self, model_cls, *args, **kwargs):
+        from esodm_async.models import ESBaseModel
+        if not isinstance(model_cls, ESBaseModel):
+            raise TypeError("%s not instance of %s metaclass" % (model_cls, ESBaseModel))
 
-        if issubclass(ESBaseModel, model):
-            raise TypeError("%s is not subclass of %s" % (model.__class__, ESBaseModel.__class__))
-
-        self.model = model
-
-        self.index = kwargs.get('index', self.index)
-        self.doc_type = kwargs.get('doc_type', self.model.__class__.__name__)
+        self.model_cls = model_cls
 
     def get_fields(self, include_hidden: bool = False) -> dict:
         """
@@ -29,9 +25,10 @@ class ESOptions(object):
         :return: properties dictionary (dict)
         """
         if include_hidden:
-            return {f[0]: f[1] for f in inspect.getmembers(self.model) if getattr(f[1], 'is_field', False)}
+            return {f[0]: f[1] for f in inspect.getmembers(self.model_cls)
+                    if getattr(f[1], 'is_field', False)}
 
-        return {f[0]: f[1] for f in inspect.getmembers(self.model)
+        return {f[0]: f[1] for f in inspect.getmembers(self.model_cls)
                 if getattr(f[1], 'is_field', False) and not f[0].startswith("_", 0, 2)}
 
     def get_parents(self) -> list:
@@ -39,25 +36,23 @@ class ESOptions(object):
         This method returning all parent (without builtin classes) from model class.
         :return: Model parents list (list)
         """
-        parents = [parent for parent in inspect.getmro(self.model)
-                   if parent.__name__ not in dir(builtins)]
-        parents.reverse()
-        return parents
+        # [::-1] - reverse list
+        return [parent for parent in inspect.getmro(self.model_cls)
+                if parent.__name__ not in dir(builtins)][::-1]
 
     def get_attrs(self, include_parents: bool = False, include_hidden: bool = False) -> dict:
         """
         This method returning Meta attributes.
-        :param include_parents: Returning attributes from all parents model class
+        :param include_parents: Returning Meta attributes from all parents model class
         :param include_hidden: Returning all attributes (including those that begin with "_")
         :return: attributes dictionary (dict)
         """
         attrs = {}
-        if not include_parents:
-            attrs.update(dict(inspect.getmembers(self)))
-        else:
+        if include_parents:
             for parent in self.get_parents():
                 if hasattr(parent, '_meta'):
                     attrs.update(dict(inspect.getmembers(parent._meta)))
+        attrs.update(dict(inspect.getmembers(self)))
         if not include_hidden:
             return {f[0]: f[1] for f in attrs.items() if not f[0].startswith("_", 0, 2)}
         return attrs
