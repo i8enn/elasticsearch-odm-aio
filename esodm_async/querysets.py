@@ -6,7 +6,16 @@ class ESBaseQuerySet(abc.AsyncIterator):
     _data: []
     _aiter: abc.Iterator
 
-    def __init__(self, data: list = None):
+    def __init__(self, model, data: list = None):
+        from esodm_async.models import ESBaseModel
+        if not isinstance(model, ESBaseModel):
+            raise TypeError("%s is not instance of %s" % (model, ESBaseModel.__name__))
+        self.model = model
+
+        for item in data:
+            if not isinstance(item, self.model):
+                raise TypeError("%s is not instance of %s" % (item, self.model.__name__))
+
         self._data = data or []
 
         super(ESBaseQuerySet, self).__init__()

@@ -6,13 +6,26 @@ from esodm_async.querysets import ESQuerySet
 class ESBaseManager(object):
 
     _queryset_cls = None
+    model = None
+    is_manager = True  # Need for find manager in model
 
     def __init__(self, *args, **kwargs):
-        self._queryset_cls = kwargs.get('queryset_cls')
+        from esodm_async.models import ESBaseModel
+        model = kwargs.get('model')
+        if isinstance(model, ESBaseModel):
+            raise AttributeError("%s is not instance %s" % (model, ESBaseModel.__name__))
+        super(ESBaseManager, self).__init__()
 
-    # TODO: Need implement
     def __get__(self, instance, owner):
-        raise NotImplementedError
+        """
+        This method need control access to manager (not access from model instance)
+        :param instance: inherit
+        :param owner: inherit
+        :return: manager instance
+        """
+        if instance is not None:
+            raise AttributeError("Сan not call manager from model instance")
+        return self
 
     @classmethod
     def _get_queryset_methods(cls, queryset_cls) -> dict:
@@ -21,6 +34,8 @@ class ESBaseManager(object):
         :param queryset_cls: queryset class
         :return: methods dictionary (dict)
         """
+
+        # noinspection PyShadowingNames
         def create_method(name, method):
             def manager_method(self, *args, **kwargs):
                 return getattr(self.get_queryset(), name)(*args, **kwargs)
@@ -51,7 +66,7 @@ class ESBaseManager(object):
         if class_name is None:
             class_name = "%sFrom%s" % (cls.__name__, queryset_cls.__name__)
         return type(class_name, (cls,), {
-            '_queryset_class': queryset_cls,
+            '_queryset_cls': queryset_cls,
             **cls._get_queryset_methods(queryset_cls),
         })
 
@@ -60,8 +75,13 @@ class ESBaseManager(object):
         This method returned queryset object with args
         :return: Queryset (ESQuerySet object)
         """
-        return self._queryset_cls(*args, **kwargs)
+        return self._queryset_cls(model=self.model, *args, **kwargs)
 
 
 class ESManager(ESBaseManager.from_queryset(queryset_cls=ESQuerySet)):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        from esodm_async.models import ESBaseModel
+        self.model = kwargs.get('model', None)
+        if not self.model or not isinstance(self.model, ESBaseModel):
+            raise TypeError("%s is not instance from %s" % (self.model, ESBaseModel.__name__))

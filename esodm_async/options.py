@@ -7,6 +7,7 @@ class ESOptions(object):
     index = None
     doc_type = None
     model_cls = None
+    managers = {}
 
     # Not overrides attributes in ESBaseModel.__init__ metaclass
     protected_attrs = ('model_cls',)

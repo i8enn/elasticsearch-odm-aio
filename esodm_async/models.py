@@ -1,6 +1,7 @@
 import inspect
 
 from esodm_async.options import ESOptions
+from esodm_async.managers import ESManager
 
 
 class ESBaseModel(type):
@@ -10,7 +11,6 @@ class ESBaseModel(type):
         pass
 
     def __init__(cls, *args, **kwargs):
-
         meta_class = ESOptions(cls)
         meta_attrs = meta_class.get_attrs(include_parents=True, include_hidden=True)
         # Override attrs from customer Meta class
@@ -41,14 +41,31 @@ class ESBaseModel(type):
         for attr, field in cls._meta.get_fields(include_hidden=True).items():
             field._model_attr = attr
 
+        # Init manager with model kwargs
+        cls._meta.managers = {}
+        for attr, manager in cls._get_managers().items():
+            if not getattr(manager, 'model', None):
+                manager = manager(model=cls)
+            setattr(cls, attr, manager)
+            cls._meta.managers[attr] = getattr(cls, attr)
+
+        if not cls._meta.managers:
+            raise AttributeError("In %s model no manager defined")
+
         super(ESBaseModel, cls).__init__(*args, **kwargs)
+
+    def _get_managers(cls) -> dict:
+        return {f[0]: f[1] for f in inspect.getmembers(cls)
+                if getattr(f[1], 'is_manager', False)}
 
 
 class ESModel(metaclass=ESBaseModel):
-    _meta = None
+    _meta: ESOptions = None
 
     class Meta:
         pass
+
+    objects = ESManager
 
     def __init__(self, *args, **kwargs):
         # Load initial values for object from kwargs

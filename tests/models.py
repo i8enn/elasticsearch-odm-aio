@@ -1,6 +1,7 @@
 import pytest
 
-from esodm_async.models import ESModel
+from esodm_async.models import ESModel, ESBaseModel
+from esodm_async.managers import ESManager
 from .conftest import TestFieldModel
 
 
@@ -66,3 +67,32 @@ class TestingESModel(object):
         obj = TestFieldModel(**kwargs)
         for attr, value in kwargs.items():
             assert getattr(obj, attr, None) == value
+
+    async def test_init_manager(self):
+        class TestModel(metaclass=ESBaseModel):
+            class Meta:
+                index = "Test"
+            objects = ESManager
+
+        assert isinstance(TestModel.objects, ESManager)
+
+    # noinspection PyUnusedLocal
+    async def test_raise_if_no_defined_manager(self):
+        with pytest.raises(AttributeError, match="no manager defined"):
+            class TestModel(metaclass=ESBaseModel):
+                class Meta:
+                    index = "Test"
+
+    async def test_get_manager_map_from_meta(self):
+        class TestModel(ESModel):
+            class Meta:
+                index = "Test"
+
+            objects = ESManager
+            first_manager = ESManager
+            second_manager = ESManager
+            last_manager = ESManager
+
+        for attr, manager in TestModel._meta.managers.items():
+            assert hasattr(TestModel, attr)
+            assert isinstance(manager, getattr(TestModel, attr).__class__)

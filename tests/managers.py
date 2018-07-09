@@ -3,6 +3,7 @@ import inspect
 
 from esodm_async.managers import ESBaseManager, ESManager
 from esodm_async.querysets import ESQuerySet
+from esodm_async.models import ESModel
 
 
 @pytest.mark.asyncio
@@ -46,9 +47,26 @@ class TestingESManager(object):
             assert method.__name__ == manager_method.__name__
             assert method.__doc__ == manager_method.__doc__
 
+    # noinspection PyStatementEffect
+    async def test_raise_if_get_manager_from_model_objects(self):
+        class TestModel(ESModel):
+            class Meta:
+                index = "Test"
+
+            objects = ESManager
+
+        with pytest.raises(AttributeError, match="Сan not call manager from model instance"):
+            TestModel().objects
+
 
 @pytest.mark.asyncio
 class TestingESQueryset(object):
 
     async def test_create_standard_manager_from_qs(self):
-        assert ESManager._queryset_class == ESQuerySet
+        assert ESManager._queryset_cls == ESQuerySet
+
+    async def test_check_model(self):
+        with pytest.raises(TypeError, match="is not instance from ESBaseModel"):
+            class TestManager(ESManager):
+                model = str
+            TestManager()
