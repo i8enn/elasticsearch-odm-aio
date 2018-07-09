@@ -1,0 +1,56 @@
+from collections import abc
+
+
+class ESBaseQuerySet(abc.AsyncIterator):
+
+    _data: []
+    _aiter: abc.Iterator
+
+    def __init__(self, model, data: list = None):
+        from esodm_async.models import ESBaseModel
+        if not isinstance(model, ESBaseModel):
+            raise TypeError("%s is not instance of %s" % (model, ESBaseModel.__name__))
+        self.model = model
+
+        for item in data:
+            if not isinstance(item, self.model):
+                raise TypeError("%s is not instance of %s" % (item, self.model.__name__))
+
+        self._data = data or []
+
+        super(ESBaseQuerySet, self).__init__()
+
+    async def __aiter__(self) -> abc.AsyncIterator:
+        self._aiter = self._data.__iter__()
+        return self
+
+    async def __anext__(self):
+        try:
+            return self._aiter.__next__()
+        except (StopIteration, StopAsyncIteration):
+            raise StopAsyncIteration
+
+    def __getitem__(self, item):
+        if not isinstance(item, (int, slice)):
+            raise TypeError("%s is not %s or %s" % (item, int.__name__, slice.__name__))
+        return self._data[item]
+
+    def __setitem__(self, key, value):
+        raise TypeError("%s is immutable object" % self.__class__.__name__)
+
+    def __str__(self):
+        if len(self.data) > 20:
+            return "<QuerySet: %s... and more %s elements" % (self.data, len(self.data))
+        return "<QuerySet: %s>" % self.data
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        raise TypeError("%s is immutable object" % self.__class__.__name__)
+
+
+class ESQuerySet(ESBaseQuerySet):
+    pass
